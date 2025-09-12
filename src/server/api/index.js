@@ -17,16 +17,31 @@ const db = require('./db')
 
 // Events
 router.get('/events', async (req, res) => {
-  const { q, status } = req.query
+  const { q, status, start, end, category } = req.query
   try {
     let sql = 'SELECT * FROM events'
     const params = []
     const where = []
     if (status) { where.push(`status = $${params.length+1}`); params.push(status) }
     if (q) { where.push(`(title ILIKE $${params.length+1} OR description ILIKE $${params.length+1})`); params.push(`%${q}%`) }
+    if (start) { where.push(`date >= $${params.length+1}`); params.push(start) }
+    if (end) { where.push(`date <= $${params.length+1}`); params.push(end) }
+    if (category) { where.push(`type = $${params.length+1}`); params.push(category) }
     if (where.length) sql += ' WHERE ' + where.join(' AND ')
+    sql += ' ORDER BY date ASC'
     const { rows } = await db.query(sql, params)
     res.json(rows)
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'db' })
+  }
+})
+
+// Distinct event categories
+router.get('/events/categories', async (req, res) => {
+  try {
+    const { rows } = await db.query('SELECT DISTINCT type FROM events WHERE type IS NOT NULL ORDER BY type ASC')
+    res.json(rows.map(r => r.type))
   } catch (err) {
     console.error(err)
     res.status(500).json({ error: 'db' })
