@@ -93,8 +93,37 @@ router.get('/events/:id/media', async (req, res) => {
   catch (err) { console.error(err); res.status(500).json({ error: 'db' }) }
 })
 
-// Media route mounted separately (uploads to Google Drive)
-const drive = require('./drive')
-router.use('/drive', drive)
+// Local file upload for media
+const multer = require('multer')
+const path = require('path')
+const fs = require('fs')
+
+// ensure uploads dir exists
+const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true })
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) { cb(null, uploadsDir) },
+  filename: function (req, file, cb) {
+    const unique = Date.now() + '-' + Math.round(Math.random()*1e9)
+    const ext = path.extname(file.originalname)
+    cb(null, `${unique}${ext}`)
+  }
+})
+const upload = multer({ storage })
+
+// POST /api/events/:id/media -> accept file upload and save local record
+router.post('/events/:id/media', upload.single('file'), async (req, res) => {
+  const { id } = req.params
+  if (!req.file) return res.status(400).json({ error: 'no file' })
+  const fileUrl = `/uploads/${req.file.filename}`
+  try {
+    const { rows } = await db.query(
+      `INSERT INTO media(event_id, user_id, filename, url, uploaded_at) VALUES($1,$2,$3,$4,NOW()) RETURNING *`,
+      [id, req.body.user_id || null, req.file.originalname, fileUrl]
+    )
+    res.json(rows[0])
+  } catch (err) { console.error(err); res.status(500).json({ error: 'db' }) }
+})
 
 module.exports = router

@@ -25,7 +25,7 @@ export default function EventDetail(){
 
   const addDriveLink = async ()=>{
     // allow pasting existing drive link
-    await fetch(`/api/events/${id}/media`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ file_name:driveLink, file_type:'link', drive_file_id:null, drive_url:driveLink, uploaded_by:1 })})
+    await fetch(`/api/events/${id}/media`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ filename:driveLink, url:driveLink, file_type:'link', user_id:1 })})
     setDriveLink('')
   }
 
@@ -34,7 +34,7 @@ export default function EventDetail(){
     if (!f) return
     const form = new FormData()
     form.append('file', f)
-    const res = await fetch(`/api/drive/upload/${id}`, { method: 'POST', body: form })
+    const res = await fetch(`/api/events/${id}/media`, { method: 'POST', body: form })
     if (res.ok) { /* ideally revalidate media SWR */ }
   }
 
@@ -79,7 +79,7 @@ export default function EventDetail(){
               <h4>Files</h4>
               {media ? media.map(m => (
                 <div key={m.id} style={{marginBottom:6}}>
-                  {m.file_type && m.file_type.startsWith('image') ? (<img src={m.drive_url} style={{maxWidth:200}} />) : (<a href={m.drive_url} target="_blank" rel="noreferrer">{m.file_name}</a>)}
+                  {m.file_type && m.file_type.startsWith('image') ? (<img src={m.url} style={{maxWidth:200}} />) : (<a href={m.url || m.drive_url} target="_blank" rel="noreferrer">{m.filename || m.file_name}</a>)}
                 </div>
               )) : 'Loading...'}
             </div>
