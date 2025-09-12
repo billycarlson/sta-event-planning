@@ -1,6 +1,6 @@
 # Stay Event Planning - Minimal Scaffold
 
-This repository contains a minimal Next.js + Express + PostgreSQL scaffold for event planning with Google Drive media integration planned.
+This repository contains a minimal Next.js + Express + PostgreSQL scaffold for event planning with Google Drive media integration planned. A dashboard on the home page lets you filter events by date range and category.
 
 Quick start
 

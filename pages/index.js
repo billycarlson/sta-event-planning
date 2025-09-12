@@ -1,12 +1,19 @@
+import { useState } from 'react'
 import useSWR from 'swr'
 import Link from 'next/link'
 
-const fetcher = url => fetch(url).then(r=>r.json())
+const fetcher = url => fetch(url).then(r => r.json())
 
-export default function Dashboard(){
-  const { data: upcoming } = useSWR('/api/events?status=confirmed', fetcher)
-  const { data: inDev } = useSWR('/api/events?status=idea', fetcher)
-  const { data: archived } = useSWR('/api/events?status=archived', fetcher)
+export default function Dashboard() {
+  const [filters, setFilters] = useState({ start: '', end: '', category: '' })
+
+  const { data: categories } = useSWR('/api/events/categories', fetcher)
+
+  const qs = new URLSearchParams()
+  if (filters.start) qs.append('start', filters.start)
+  if (filters.end) qs.append('end', filters.end)
+  if (filters.category) qs.append('category', filters.category)
+  const { data: events } = useSWR(`/api/events${qs.toString() ? '?' + qs.toString() : ''}`, fetcher)
 
   return (
     <div className="container">
@@ -16,14 +23,33 @@ export default function Dashboard(){
         <Link href="/events"><button className="btn secondary" style={{marginLeft:8}}>Search Events</button></Link>
       </div>
 
-      <h2>Upcoming Events</h2>
-      <div className="card">{upcoming ? upcoming.length ? upcoming.map(e=> <div key={e.id}><Link href={`/events/${e.id}`}><a>{e.title} — {e.date}</a></Link></div>) : 'No upcoming' : 'Loading...'}</div>
+      <div className="card" style={{marginBottom:20}}>
+        <label style={{marginRight:8}}>Start Date <input type="date" value={filters.start} onChange={e => setFilters({ ...filters, start: e.target.value })} /></label>
+        <label style={{marginRight:8}}>End Date <input type="date" value={filters.end} onChange={e => setFilters({ ...filters, end: e.target.value })} /></label>
+        <label>Category
+          <select value={filters.category} onChange={e => setFilters({ ...filters, category: e.target.value })}>
+            <option value="">All</option>
+            {categories && categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+      </div>
 
-      <h2>In Development</h2>
-      <div className="card">{inDev ? inDev.length ? inDev.map(e=> <div key={e.id}><Link href={`/events/${e.id}`}><a>{e.title} — {e.status}</a></Link></div>) : 'No events' : 'Loading...'}</div>
-
-      <h2>Archived</h2>
-      <div className="card">{archived ? archived.length ? archived.map(e=> <div key={e.id}><Link href={`/events/${e.id}`}><a>{e.title} — {e.date}</a></Link></div>) : 'No archived' : 'Loading...'}</div>
+      <div className="card">
+        {events ? events.length ? (
+          <table style={{width:'100%'}}>
+            <thead><tr><th>Date</th><th>Title</th><th>Category</th></tr></thead>
+            <tbody>
+              {events.map(e => (
+                <tr key={e.id}>
+                  <td>{e.date}</td>
+                  <td><Link href={`/events/${e.id}`}><a>{e.title}</a></Link></td>
+                  <td>{e.type}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : 'No events found' : 'Loading...'}
+      </div>
     </div>
   )
 }
