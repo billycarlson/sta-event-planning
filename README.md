@@ -11,6 +11,8 @@ Quick start
 npm install
 ```
 
+If the dev server complains about missing packages such as `express`, run `npm install` again to ensure all dependencies are installed.
+
 3. Create database and run migrations:
 
 ```bash
